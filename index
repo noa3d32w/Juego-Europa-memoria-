@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Día de Europa</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#003399;
+    color:white;
+    text-align:center;
+}
+
+h1{
+    color:#ffcc00;
+}
+
+#inicio, #juego{
+    padding:20px;
+}
+
+input{
+    padding:10px;
+    font-size:18px;
+    border-radius:10px;
+    border:none;
+}
+
+button{
+    padding:10px 20px;
+    font-size:18px;
+    border:none;
+    border-radius:10px;
+    background:#ffcc00;
+    color:#003399;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+.info{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    flex-wrap:wrap;
+    margin:20px;
+    font-size:20px;
+}
+
+#tablero{
+    display:grid;
+    grid-template-columns:repeat(4,90px);
+    gap:10px;
+    justify-content:center;
+}
+
+.carta{
+    width:90px;
+    height:90px;
+    background:#ffcc00;
+    border-radius:10px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:40px;
+    cursor:pointer;
+    color:transparent;
+}
+
+.carta.volteada{
+    background:white;
+    color:#003399;
+}
+
+.carta.correcta{
+    background:green;
+    color:white;
+}
+
+#mensaje{
+    margin-top:20px;
+    font-size:24px;
+    color:#ffcc00;
+}
+</style>
+</head>
+<body>
+
+<div id="inicio">
+    <h1>🇪🇺 Memory Día de Europa 🇪🇺</h1>
+    <p>Escribe tu nombre para empezar</p>
+
+    <input type="text" id="nombre">
+    <br>
+    <button id="btnJugar">Jugar</button>
+</div>
+
+<div id="juego" style="display:none;">
+    <h1>🇪🇺 Memory Europeo 🇪🇺</h1>
+
+    <div class="info">
+        <div>👤 <span id="jugador"></span></div>
+        <div>⭐ Puntos: <span id="puntos">0</span></div>
+        <div>⏱ Tiempo: <span id="tiempo">0</span></div>
+        <div>🎯 Nivel: <span id="nivel">1</span></div>
+    </div>
+
+    <div id="tablero"></div>
+
+    <div id="mensaje"></div>
+</div>
+
+<script>
+
+const niveles = [
+["🇪🇸","🇪🇸","🇫🇷","🇫🇷","🇩🇪","🇩🇪","🇮🇹","🇮🇹"],
+
+["🇪🇸","🇪🇸","🇫🇷","🇫🇷","🇩🇪","🇩🇪","🇮🇹","🇮🇹","🇵🇹","🇵🇹","🇬🇷","🇬🇷"],
+
+["🇪🇸","🇪🇸","🇫🇷","🇫🇷","🇩🇪","🇩🇪","🇮🇹","🇮🇹","🇵🇹","🇵🇹","🇬🇷","🇬🇷","🇪🇺","🇪🇺","🕊️","🕊️"]
+];
+
+let nivelActual = 0;
+let primeraCarta = null;
+let bloqueo = false;
+let parejas = 0;
+let puntos = 0;
+let tiempo = 0;
+let reloj;
+
+document.getElementById("btnJugar").addEventListener("click", iniciarJuego);
+
+function iniciarJuego(){
+
+    let nombre = document.getElementById("nombre").value;
+
+    if(nombre.trim() === ""){
+        alert("Escribe un nombre");
+        return;
+    }
+
+    document.getElementById("inicio").style.display = "none";
+    document.getElementById("juego").style.display = "block";
+
+    document.getElementById("jugador").innerText = nombre;
+
+    iniciarNivel();
+
+    reloj = setInterval(()=>{
+        tiempo++;
+        document.getElementById("tiempo").innerText = tiempo;
+    },1000);
+}
+
+function iniciarNivel(){
+
+    parejas = 0;
+
+    const tablero = document.getElementById("tablero");
+
+    tablero.innerHTML = "";
+
+    let cartas = [...niveles[nivelActual]];
+
+    cartas.sort(()=>Math.random()-0.5);
+
+    cartas.forEach(simbolo=>{
+
+        const carta = document.createElement("div");
+
+        carta.classList.add("carta");
+
+        carta.innerText = simbolo;
+
+        carta.dataset.valor = simbolo;
+
+        carta.addEventListener("click", voltear);
+
+        tablero.appendChild(carta);
+    });
+
+    document.getElementById("nivel").innerText = nivelActual + 1;
+}
+
+function voltear(){
+
+    if(
+        bloqueo ||
+        this.classList.contains("volteada") ||
+        this.classList.contains("correcta")
+    ){
+        return;
+    }
+
+    this.classList.add("volteada");
+
+    if(!primeraCarta){
+        primeraCarta = this;
+        return;
+    }
+
+    if(primeraCarta.dataset.valor === this.dataset.valor){
+
+        primeraCarta.classList.add("correcta");
+        this.classList.add("correcta");
+
+        puntos += 10;
+
+        document.getElementById("puntos").innerText = puntos;
+
+        parejas++;
+
+        primeraCarta = null;
+
+        comprobarNivel();
+
+    }else{
+
+        bloqueo = true;
+
+        setTimeout(()=>{
+
+            primeraCarta.classList.remove("volteada");
+
+            this.classList.remove("volteada");
+
+            primeraCarta = null;
+
+            bloqueo = false;
+
+        },1000);
+    }
+}
+
+function comprobarNivel(){
+
+    let total = niveles[nivelActual].length / 2;
+
+    if(parejas === total){
+
+        if(nivelActual < 2){
+
+            document.getElementById("mensaje").innerText =
+            "🎉 Nivel superado";
+
+            nivelActual++;
+
+            setTimeout(()=>{
+
+                document.getElementById("mensaje").innerText = "";
+
+                iniciarNivel();
+
+            },2000);
+
+        }else{
+
+            clearInterval(reloj);
+
+            document.getElementById("mensaje").innerHTML =
+            "🏆 ¡Has ganado!<br>Puntos: " + puntos +
+            "<br>Tiempo: " + tiempo + " segundos";
+        }
+    }
+}
+
+</script>
+
+</body>
+</html>
